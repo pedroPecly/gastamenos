@@ -12,9 +12,12 @@ function App() {
     availableOverall,
     safeSavings,
     isSavingsCorroded,
+    totalExtraIncomeSum,
     updateMonthlyIncome,
     addExpense,
     deleteExpense,
+    addExtraIncome,
+    deleteExtraIncome,
     weeklyData,
     cycleInfo
   } = useFinance();
@@ -59,6 +62,15 @@ function App() {
     setExpandedWeek(expandedWeek === weekNumber ? null : weekNumber);
   };
 
+  // Roteia o save do modal para o handler correto conforme o tipo da transação
+  const handleTransactionSave = (transaction) => {
+    if (transaction.type === 'income') {
+      addExtraIncome(transaction);
+    } else {
+      addExpense(transaction);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F2F2F7] font-sans relative sm:max-w-md mx-auto sm:border-x sm:border-gray-200">
       {/* Header Estilo iOS */}
@@ -99,9 +111,16 @@ function App() {
             <Calendar size={16} className="text-blue-500" />
             Fatura de {cycleInfo.referenceMonthName}
           </span>
-          <span className="font-semibold text-gray-800 bg-gray-100 px-3 py-1 rounded-full text-xs">
-            {closingDay ? `Fecha dia ${closingDay}` : 'Mês Civil'}
-          </span>
+          <div className="flex items-center gap-2">
+            {totalExtraIncomeSum > 0 && (
+              <span className="font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-xs border border-emerald-100 flex items-center gap-1">
+                ＋{formatCurrency(totalExtraIncomeSum)}
+              </span>
+            )}
+            <span className="font-semibold text-gray-800 bg-gray-100 px-3 py-1 rounded-full text-xs">
+              {closingDay ? `Fecha dia ${closingDay}` : 'Mês Civil'}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -119,7 +138,7 @@ function App() {
       {/* Lista de Semanas Dinâmica */}
       <main className="px-5 py-6 pb-28 space-y-4">
         {weeklyData.map((week) => {
-          const { weekNumber, label, budget, balance, status, totalSpent, expensesList } = week;
+          const { weekNumber, label, budget, balance, status, totalSpent, expensesList, extraIncomeList, totalExtraIncome } = week;
           const isExpanded = expandedWeek === weekNumber;
           
           if (status === 'passed') {
@@ -152,26 +171,45 @@ function App() {
 
                 {isExpanded && (
                   <div className="mt-4 pt-3 border-t border-gray-200/50 space-y-2">
-                    {expensesList.length === 0 ? (
-                      <p className="text-xs text-center text-gray-400 py-2">Nenhuma despesa nesta semana.</p>
+                    {expensesList.length === 0 && extraIncomeList.length === 0 ? (
+                      <p className="text-xs text-center text-gray-400 py-2">Nenhum lançamento nesta semana.</p>
                     ) : (
-                      expensesList.map(exp => (
-                        <div key={exp.id} className="flex justify-between items-center bg-gray-100/50 p-3 rounded-xl">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-700">{exp.description}</p>
-                            <p className="text-[10px] text-gray-500">{new Date(exp.date).toLocaleDateString('pt-BR')}</p>
+                      <>
+                        {expensesList.map(exp => (
+                          <div key={exp.id} className="flex justify-between items-center bg-gray-100/50 p-3 rounded-xl">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-700">{exp.description}</p>
+                              <p className="text-[10px] text-gray-500">{new Date(exp.date).toLocaleDateString('pt-BR')}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-gray-600">-{formatCurrency(exp.amount)}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }}
+                                className="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 active:scale-95 transition"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-gray-600">-{formatCurrency(exp.amount)}</span>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }} 
-                              className="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 active:scale-95 transition"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                        ))}
+                        {extraIncomeList.map(inc => (
+                          <div key={inc.id} className="flex justify-between items-center bg-emerald-50/60 p-3 rounded-xl border border-emerald-100/60">
+                            <div>
+                              <p className="text-sm font-semibold text-emerald-700">{inc.description}</p>
+                              <p className="text-[10px] text-emerald-500">{new Date(inc.date).toLocaleDateString('pt-BR')} · Receita Extra</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-emerald-600">+{formatCurrency(inc.amount)}</span>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); deleteExtraIncome(inc.id); }}
+                                className="text-gray-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50 active:scale-95 transition"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        ))}
+                      </>
                     )}
                   </div>
                 )}
@@ -238,38 +276,66 @@ function App() {
                 <p className="text-xs text-gray-400 font-medium">
                   {isNegative ? 'Orçamento estourado!' : `${progress.toFixed(0)}% restante`}
                 </p>
-                {totalSpent > 0 && (
-                  <p className="text-[11px] text-gray-400 font-semibold flex items-center gap-1">
-                    Gastos: {formatCurrency(totalSpent)}
-                  </p>
-                )}
+                <div className="flex items-center gap-2">
+                  {totalExtraIncome > 0 && (
+                    <p className="text-[11px] text-emerald-500 font-semibold">
+                      +{formatCurrency(totalExtraIncome)}
+                    </p>
+                  )}
+                  {totalSpent > 0 && (
+                    <p className="text-[11px] text-gray-400 font-semibold">
+                      -{formatCurrency(totalSpent)}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {isExpanded && (
                 <div className="mt-5 pt-4 border-t border-gray-100 space-y-2">
                   <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Lançamentos da Semana</h4>
-                  {expensesList.length === 0 ? (
+                  {expensesList.length === 0 && extraIncomeList.length === 0 ? (
                     <p className="text-sm text-center text-gray-400 py-3 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-                      Nenhuma despesa lançada nesta semana.
+                      Nenhum lançamento nesta semana.
                     </p>
                   ) : (
-                    expensesList.map(exp => (
-                      <div key={exp.id} className="flex justify-between items-center bg-gray-50 p-3.5 rounded-xl border border-gray-100">
-                        <div>
-                          <p className="text-sm font-bold text-gray-800">{exp.description}</p>
-                          <p className="text-[11px] font-medium text-gray-400 mt-0.5">{new Date(exp.date).toLocaleDateString('pt-BR')}</p>
+                    <>
+                      {expensesList.map(exp => (
+                        <div key={exp.id} className="flex justify-between items-center bg-gray-50 p-3.5 rounded-xl border border-gray-100">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">{exp.description}</p>
+                            <p className="text-[11px] font-medium text-gray-400 mt-0.5">{new Date(exp.date).toLocaleDateString('pt-BR')}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-base font-bold text-gray-800">-{formatCurrency(exp.amount)}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }}
+                              className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 active:scale-95 transition bg-white shadow-sm border border-gray-100"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-base font-bold text-gray-800">-{formatCurrency(exp.amount)}</span>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); deleteExpense(exp.id); }} 
-                            className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 active:scale-95 transition bg-white shadow-sm border border-gray-100"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                      ))}
+                      {extraIncomeList.map(inc => (
+                        <div key={inc.id} className="flex justify-between items-center bg-emerald-50 p-3.5 rounded-xl border border-emerald-100">
+                          <div>
+                            <p className="text-sm font-bold text-emerald-800">{inc.description}</p>
+                            <p className="text-[11px] font-medium text-emerald-400 mt-0.5">
+                              {new Date(inc.date).toLocaleDateString('pt-BR')} · Receita Extra
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-base font-bold text-emerald-600">+{formatCurrency(inc.amount)}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deleteExtraIncome(inc.id); }}
+                              className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 active:scale-95 transition bg-white shadow-sm border border-gray-100"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                    </>
                   )}
                 </div>
               )}
@@ -378,7 +444,7 @@ function App() {
       <AddExpenseModal
         isOpen={isExpenseModalOpen}
         onClose={() => setIsExpenseModalOpen(false)}
-        onSave={addExpense}
+        onSave={handleTransactionSave}
         weeklyData={weeklyData.filter(w => w.status !== 'passed')}
       />
     </div>
