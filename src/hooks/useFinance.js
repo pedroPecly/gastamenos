@@ -133,12 +133,15 @@ export function useFinance() {
     });
   }, [state.expenses, cycleInfo]);
 
-  // Motor Inteligente com Pagamento Antecipado (Savings)
+  // Orçamento fixo e isolado por semana.
+  // Cada semana recebe um orçamento proporcional aos seus dias no ciclo,
+  // calculado UMA VEZ a partir da renda base (renda − fatura − meta de economia).
+  // Gastos de uma semana NUNCA afetam o orçamento de outra.
   const weeklyData = useMemo(() => {
     const weeks = [];
     let currentStart = new Date(cycleInfo.start);
     let weekNum = 1;
-    const { end, today } = cycleInfo;
+    const { end, today, daysInCycle } = cycleInfo;
     const todayTime = today.getTime();
 
     while (currentStart <= end) {
@@ -159,6 +162,7 @@ export function useFinance() {
         status = 'current';
       }
 
+      // activeDays: dias restantes na semana (para exibição, não para cálculo de orçamento)
       let activeDays = 0;
       if (status === 'current') {
         activeDays = Math.round((currentEnd - today) / (1000 * 60 * 60 * 24)) + 1;
@@ -189,14 +193,15 @@ export function useFinance() {
       weekNum++;
     }
 
+    // Distribui despesas para a semana correspondente
     currentCycleExpenses.forEach(expense => {
       const expDate = new Date(expense.date);
       const expTime = new Date(expDate.getFullYear(), expDate.getMonth(), expDate.getDate()).getTime();
-      
+
       const week = weeks.find(w => {
-         const st = new Date(w.startDateStr).getTime();
-         const en = new Date(w.endDateStr).getTime();
-         return expTime >= st && expTime <= en;
+        const st = new Date(w.startDateStr).getTime();
+        const en = new Date(w.endDateStr).getTime();
+        return expTime >= st && expTime <= en;
       });
 
       if (week) {
@@ -205,23 +210,16 @@ export function useFinance() {
       }
     });
 
-    const allAppExpensesSum = currentCycleExpenses.reduce((acc, curr) => acc + curr.amount, 0);
-    // Dinheiro disponível desconta a Fatura e a Meta de Economia
-    const availableMoney = state.monthlyIncome - state.initialBill - state.savingsGoal - allAppExpensesSum;
-    
-    const dailyBudget = availableMoney > 0 && cycleInfo.remainingDays > 0 
-      ? availableMoney / cycleInfo.remainingDays 
-      : 0;
+    // Orçamento diário fixo: baseado na renda total disponível dividida pelos dias TOTAIS do ciclo.
+    // Não varia conforme os gastos — garante isolamento entre semanas.
+    const baseAvailable = state.monthlyIncome - state.initialBill - state.savingsGoal;
+    const dailyBudgetBase = daysInCycle > 0 ? baseAvailable / daysInCycle : 0;
 
     weeks.forEach(week => {
-      if (week.status === 'passed') {
-        week.budget = week.totalSpent;
-        week.balance = 0;
-      } else {
-        const weekRemainingBalance = week.activeDays * dailyBudget;
-        week.budget = weekRemainingBalance + week.totalSpent;
-        week.balance = weekRemainingBalance;
-      }
+      // Orçamento fixo proporcional aos dias da semana
+      week.budget = dailyBudgetBase * week.daysInWeek;
+      // Saldo = orçamento da semana − o que já foi gasto NELA (pode ser negativo)
+      week.balance = week.budget - week.totalSpent;
     });
 
     return weeks;
