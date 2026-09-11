@@ -267,17 +267,37 @@ export function useFinance() {
       }
     });
 
-    // Orçamento diário fixo: baseado na renda total disponível dividida pelos dias TOTAIS do ciclo.
-    // Não varia conforme os gastos — garante isolamento entre semanas.
+    // Orçamento diário base: divisão proporcional da renda disponível pelo total de dias do ciclo.
     const baseAvailable = state.monthlyIncome - state.initialBill - state.savingsGoal;
     const dailyBudgetBase = daysInCycle > 0 ? baseAvailable / daysInCycle : 0;
 
+    // Passo 1 — atribuir orçamento base a todas as semanas e calcular saldo inicial.
     weeks.forEach(week => {
-      // Orçamento fixo proporcional aos dias da semana
-      week.budget = dailyBudgetBase * week.daysInWeek;
-      // Saldo = orçamento da semana − gastos + receitas extras registradas nela
+      week.budget  = dailyBudgetBase * week.daysInWeek;
       week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
     });
+
+    // Passo 2 — somar o saldo líquido das semanas ENCERRADAS (positivo = sobrou, negativo = estourou).
+    // Esse saldo é redistribuído para as semanas ativas (atual + futuras).
+    const passedNetBalance = weeks
+      .filter(w => w.status === 'passed')
+      .reduce((acc, w) => acc + w.balance, 0);
+
+    // Passo 3 — redistribuir apenas se houver diferença significativa.
+    if (Math.abs(passedNetBalance) > 0.001) {
+      const activeWeeks = weeks.filter(w => w.status !== 'passed');
+      const activeDaysTotal = activeWeeks.reduce((acc, w) => acc + w.daysInWeek, 0);
+
+      if (activeDaysTotal > 0) {
+        // Distribui o saldo líquido das semanas passadas proporcionalmente pelos dias restantes.
+        const adjustmentPerDay = passedNetBalance / activeDaysTotal;
+
+        activeWeeks.forEach(week => {
+          week.budget  = Math.max(0, week.budget + adjustmentPerDay * week.daysInWeek);
+          week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
+        });
+      }
+    }
 
     return weeks;
   }, [state.monthlyIncome, state.initialBill, state.savingsGoal, currentCycleExpenses, currentCycleExtraIncome, cycleInfo]);
