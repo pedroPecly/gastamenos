@@ -18,7 +18,8 @@ export default function DashboardHeader({ onOpenSettings, theme, toggleTheme }) 
     totalExtraIncomeSum,
     closingDay,
     currentBankBalance,
-    initialBankBalance
+    initialBankBalance,
+    totalSpent
   } = useFinance();
 
   return (
@@ -72,7 +73,7 @@ export default function DashboardHeader({ onOpenSettings, theme, toggleTheme }) 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between text-sm gap-y-3">
           <span className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1.5">
             <Calendar size={16} className="text-blue-500 dark:text-blue-400" />
-            Fatura de {cycleInfo.referenceMonthName}
+            Fatura de {cycleInfo.referenceMonthName} <span className="text-gray-300 dark:text-gray-600 mx-0.5">•</span> <strong className="text-gray-800 dark:text-gray-200">{formatCurrency(totalSpent)}</strong>
           </span>
           <div className="flex items-center gap-2">
             {totalExtraIncomeSum > 0 && (
