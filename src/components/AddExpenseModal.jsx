@@ -142,7 +142,6 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
                   onChange={(e) => setAmount(e.target.value)}
                   className={`w-36 bg-transparent border-0 p-0 text-center focus:ring-0 outline-none placeholder-gray-300 dark:placeholder-gray-600`}
                   placeholder="0.00"
-                  autoFocus
                   required
                 />
               </div>
