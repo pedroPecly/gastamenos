@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { calculateCycleInfo, calculateWeeklyData } from '../utils/dateEngine';
 
 const STORAGE_KEY = '@financeApp:state';
 
@@ -12,7 +13,7 @@ export function useFinance() {
         initialBill: parsed.initialBill || 0,
         closingDay: parsed.closingDay || null,
         savingsGoal: parsed.savingsGoal || 0,
-        // Garante retrocompatibilidade com states que ainda não têm extraIncome
+        initialBankBalance: parsed.initialBankBalance || 0,
         extraIncome: parsed.extraIncome || []
       };
     }
@@ -21,6 +22,7 @@ export function useFinance() {
       initialBill: 0,
       closingDay: null,
       savingsGoal: 0,
+      initialBankBalance: 0,
       expenses: [],
       extraIncome: []
     };
@@ -30,13 +32,14 @@ export function useFinance() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const updateMonthlyIncome = (newIncome, newInitialBill = 0, newClosingDay = null, newSavingsGoal = 0) => {
+  const updateMonthlyIncome = (newIncome, newInitialBill = 0, newClosingDay = null, newSavingsGoal = 0, newBankBalance = 0) => {
     setState((prevState) => ({
       ...prevState,
       monthlyIncome: newIncome,
       initialBill: newInitialBill,
       closingDay: newClosingDay,
-      savingsGoal: newSavingsGoal
+      savingsGoal: newSavingsGoal,
+      initialBankBalance: newBankBalance
     }));
   };
 
@@ -50,7 +53,8 @@ export function useFinance() {
         {
           ...expense,
           id: crypto.randomUUID(),
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          source: expense.source || 'credit' // Fallback para manter retrocompatibilidade
         }
       ]
     }));
@@ -73,7 +77,8 @@ export function useFinance() {
         {
           ...income,
           id: crypto.randomUUID(),
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          source: income.source || 'credit'
         }
       ]
     }));
@@ -89,71 +94,9 @@ export function useFinance() {
   // ----- MOTOR DO CICLO FINANCEIRO -----
 
   const cycleInfo = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    let start, end;
-    const closingDay = state.closingDay ? parseInt(state.closingDay, 10) : null;
-
-    if (!closingDay || closingDay < 1 || closingDay > 31) {
-      start = new Date(today.getFullYear(), today.getMonth(), 1);
-      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    } else {
-      const getValidDate = (y, m, d) => {
-        const lastDayOfMonth = new Date(y, m + 1, 0).getDate();
-        return new Date(y, m, Math.min(d, lastDayOfMonth));
-      };
-
-      let endCycleMonth = today.getMonth();
-      let endCycleYear = today.getFullYear();
-
-      if (today.getDate() > closingDay) {
-        endCycleMonth++;
-        if (endCycleMonth > 11) {
-          endCycleMonth = 0;
-          endCycleYear++;
-        }
-      }
-
-      end = getValidDate(endCycleYear, endCycleMonth, closingDay);
-
-      let startCycleMonth = endCycleMonth - 1;
-      let startCycleYear = endCycleYear;
-      if (startCycleMonth < 0) {
-        startCycleMonth = 11;
-        startCycleYear--;
-      }
-      const prevEnd = getValidDate(startCycleYear, startCycleMonth, closingDay);
-      start = new Date(prevEnd);
-      start.setDate(start.getDate() + 1);
-    }
-
-    const daysInCycle = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
-
-    let remainingDays = 0;
-    if (today > end) {
-      remainingDays = 0;
-    } else if (today < start) {
-      remainingDays = daysInCycle;
-    } else {
-      remainingDays = Math.round((end - today) / (1000 * 60 * 60 * 24)) + 1;
-    }
-
-    const formatter = new Intl.DateTimeFormat('pt-BR', { month: 'long' });
-    const referenceMonthName = formatter.format(end);
-
-    return {
-      start,
-      end,
-      daysInCycle,
-      remainingDays,
-      referenceMonthName: referenceMonthName.charAt(0).toUpperCase() + referenceMonthName.slice(1),
-      referenceYear: end.getFullYear(),
-      today
-    };
+    return calculateCycleInfo(state.closingDay);
   }, [state.closingDay]);
 
-  // Filtra despesas do ciclo atual
   const currentCycleExpenses = useMemo(() => {
     return state.expenses.filter(exp => {
       const expDate = new Date(exp.date);
@@ -162,7 +105,6 @@ export function useFinance() {
     });
   }, [state.expenses, cycleInfo]);
 
-  // Filtra receitas extras do ciclo atual
   const currentCycleExtraIncome = useMemo(() => {
     return state.extraIncome.filter(inc => {
       const incDate = new Date(inc.date);
@@ -171,163 +113,62 @@ export function useFinance() {
     });
   }, [state.extraIncome, cycleInfo]);
 
-  // Orçamento fixo e isolado por semana.
-  // Cada semana recebe um orçamento proporcional aos seus dias no ciclo,
-  // calculado UMA VEZ a partir da renda base (renda − fatura − meta de economia).
-  // Gastos de uma semana NUNCA afetam o orçamento de outra.
-  // Receitas extras adicionam ao saldo da semana onde foram registradas.
   const weeklyData = useMemo(() => {
-    const weeks = [];
-    let currentStart = new Date(cycleInfo.start);
-    let weekNum = 1;
-    const { end, today, daysInCycle } = cycleInfo;
-    const todayTime = today.getTime();
-
-    while (currentStart <= end) {
-      let currentEnd = new Date(currentStart);
-      currentEnd.setDate(currentEnd.getDate() + 6);
-      if (currentEnd > end) {
-        currentEnd = new Date(end);
-      }
-
-      const daysInWeek = Math.round((currentEnd - currentStart) / (1000 * 60 * 60 * 24)) + 1;
-      const startT = currentStart.getTime();
-      const endT = currentEnd.getTime();
-
-      let status = 'future';
-      if (todayTime > endT) {
-        status = 'passed';
-      } else if (todayTime >= startT && todayTime <= endT) {
-        status = 'current';
-      }
-
-      // activeDays: dias restantes na semana (para exibição, não para cálculo de orçamento)
-      let activeDays = 0;
-      if (status === 'current') {
-        activeDays = Math.round((currentEnd - today) / (1000 * 60 * 60 * 24)) + 1;
-      } else if (status === 'future') {
-        activeDays = daysInWeek;
-      }
-
-      const formatter = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
-      const fmtStart = formatter.format(currentStart).replace('.', '');
-      const fmtEnd = formatter.format(currentEnd).replace('.', '');
-
-      weeks.push({
-        weekNumber: weekNum,
-        startDateStr: currentStart.toISOString(),
-        endDateStr: currentEnd.toISOString(),
-        label: `${fmtStart} a ${fmtEnd}`,
-        daysInWeek,
-        status,
-        activeDays,
-        budget: 0,
-        balance: 0,
-        expensesList: [],
-        totalSpent: 0,
-        extraIncomeList: [],
-        totalExtraIncome: 0
-      });
-
-      currentStart = new Date(currentEnd);
-      currentStart.setDate(currentStart.getDate() + 1);
-      weekNum++;
-    }
-
-    // Utilitário: retorna o timestamp meia-noite de uma data ISO
-    const toMidnightTime = (isoDate) => {
-      const d = new Date(isoDate);
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-    };
-
-    const findWeek = (isoDate) => {
-      const t = toMidnightTime(isoDate);
-      return weeks.find(w => {
-        const st = new Date(w.startDateStr).getTime();
-        const en = new Date(w.endDateStr).getTime();
-        return t >= st && t <= en;
-      });
-    };
-
-    // Distribui despesas para a semana correspondente
-    currentCycleExpenses.forEach(expense => {
-      const week = findWeek(expense.date);
-      if (week) {
-        week.expensesList.push(expense);
-        week.totalSpent += expense.amount;
-      }
+    return calculateWeeklyData({
+      monthlyIncome: state.monthlyIncome,
+      initialBill: state.initialBill,
+      savingsGoal: state.savingsGoal,
+      currentCycleExpenses,
+      currentCycleExtraIncome,
+      cycleInfo
     });
-
-    // Distribui receitas extras para a semana correspondente
-    currentCycleExtraIncome.forEach(income => {
-      const week = findWeek(income.date);
-      if (week) {
-        week.extraIncomeList.push(income);
-        week.totalExtraIncome += income.amount;
-      }
-    });
-
-    // Orçamento diário base: divisão proporcional da renda disponível pelo total de dias do ciclo.
-    const baseAvailable = state.monthlyIncome - state.initialBill - state.savingsGoal;
-    const dailyBudgetBase = daysInCycle > 0 ? baseAvailable / daysInCycle : 0;
-
-    // Passo 1 — atribuir orçamento base a todas as semanas e calcular saldo inicial.
-    weeks.forEach(week => {
-      week.budget  = dailyBudgetBase * week.daysInWeek;
-      week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
-    });
-
-    // Passo 2 — somar o saldo líquido das semanas ENCERRADAS (positivo = sobrou, negativo = estourou).
-    // Esse saldo é redistribuído para as semanas ativas (atual + futuras).
-    const passedNetBalance = weeks
-      .filter(w => w.status === 'passed')
-      .reduce((acc, w) => acc + w.balance, 0);
-
-    // Passo 3 — redistribuir apenas se houver diferença significativa.
-    if (Math.abs(passedNetBalance) > 0.001) {
-      const activeWeeks = weeks.filter(w => w.status !== 'passed');
-      const activeDaysTotal = activeWeeks.reduce((acc, w) => acc + w.daysInWeek, 0);
-
-      if (activeDaysTotal > 0) {
-        // Distribui o saldo líquido das semanas passadas proporcionalmente pelos dias restantes.
-        const adjustmentPerDay = passedNetBalance / activeDaysTotal;
-
-        activeWeeks.forEach(week => {
-          week.budget  = Math.max(0, week.budget + adjustmentPerDay * week.daysInWeek);
-          week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
-        });
-      }
-    }
-
-    return weeks;
   }, [state.monthlyIncome, state.initialBill, state.savingsGoal, currentCycleExpenses, currentCycleExtraIncome, cycleInfo]);
 
   // ----- CÁLCULOS GERAIS -----
 
-  const totalExpensesSum = currentCycleExpenses.reduce((acc, curr) => acc + curr.amount, 0);
-  const totalExtraIncomeSum = currentCycleExtraIncome.reduce((acc, curr) => acc + curr.amount, 0);
+  // Filtramos os gastos e rendimentos apenas do cartão/ciclo (ignoramos os da conta bancária)
+  const totalExpensesCredit = currentCycleExpenses
+    .filter(e => e.source !== 'bank')
+    .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // totalSpent: total de saídas do ciclo (despesas + fatura inicial)
-  const totalSpent = totalExpensesSum + state.initialBill;
+  const totalExtraIncomeCredit = currentCycleExtraIncome
+    .filter(i => i.source !== 'bank')
+    .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // availableOverall: renda + receitas extras − gastos − meta de economia
-  const rawAvailable = state.monthlyIncome + totalExtraIncomeSum - totalSpent;
+  // totalSpent: total de saídas do ciclo do cartão
+  const totalSpent = totalExpensesCredit + state.initialBill;
+
+  // availableOverall: renda + receitas extras no cartão − gastos no cartão − meta de economia
+  const rawAvailable = state.monthlyIncome + totalExtraIncomeCredit - totalSpent;
   const availableOverall = rawAvailable - state.savingsGoal;
 
-  // Se availableOverall for negativo, significa que começou a comer a economia.
+  // Economia Blindada
   const safeSavings = Math.max(0, state.savingsGoal + Math.min(0, availableOverall));
   const isSavingsCorroded = state.savingsGoal > 0 && safeSavings < state.savingsGoal;
+
+  // ----- CÁLCULOS DA CONTA BANCÁRIA -----
+  const bankExpensesSum = state.expenses
+    .filter(e => e.source === 'bank')
+    .reduce((acc, curr) => acc + curr.amount, 0);
+
+  const bankIncomesSum = state.extraIncome
+    .filter(i => i.source === 'bank')
+    .reduce((acc, curr) => acc + curr.amount, 0);
+
+  const currentBankBalance = state.initialBankBalance - bankExpensesSum + bankIncomesSum;
 
   return {
     monthlyIncome: state.monthlyIncome,
     initialBill: state.initialBill,
     closingDay: state.closingDay,
     savingsGoal: state.savingsGoal,
-    availableOverall,        // Dinheiro livre (sem a economia)
-    safeSavings,             // Dinheiro blindado que sobrou
+    initialBankBalance: state.initialBankBalance,
+    currentBankBalance,
+    availableOverall,
+    safeSavings,
     isSavingsCorroded,
     totalSpent,
-    totalExtraIncomeSum,
+    totalExtraIncomeSum: totalExtraIncomeCredit,
     expenses: currentCycleExpenses,
     extraIncome: currentCycleExtraIncome,
     updateMonthlyIncome,

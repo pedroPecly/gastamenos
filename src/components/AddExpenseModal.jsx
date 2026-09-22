@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { X, TrendingDown, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, TrendingDown, TrendingUp, CreditCard, Landmark } from 'lucide-react';
 
 export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData }) {
   const [transactionType, setTransactionType] = useState('expense'); // 'expense' | 'income'
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [selectedWeek, setSelectedWeek] = useState(null);
+  const [source, setSource] = useState('credit'); // 'credit' | 'bank'
 
   // Seleciona a semana atual por padrão ao abrir o modal
   useEffect(() => {
     if (isOpen && weeklyData.length > 0 && !selectedWeek) {
       const currentWeek = weeklyData.find(w => w.status === 'current');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedWeek(currentWeek ? currentWeek.weekNumber : weeklyData[0].weekNumber);
     }
   }, [isOpen, weeklyData, selectedWeek]);
@@ -18,7 +20,10 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
   // Reseta tipo ao fechar
   useEffect(() => {
     if (!isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTransactionType('expense');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSource('credit');
     }
   }, [isOpen]);
 
@@ -33,10 +38,12 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
         description,
         amount: Number(amount),
         weekNumber: selectedWeek,
-        type: transactionType
+        type: transactionType,
+        source: source
       });
       setAmount('');
       setDescription('');
+      setSource('credit');
       onClose();
     }
   };
@@ -44,6 +51,7 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
   const handleClose = () => {
     setAmount('');
     setDescription('');
+    setSource('credit');
     onClose();
   };
 
@@ -54,7 +62,6 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
         border: 'border-emerald-100',
         amountColor: 'text-emerald-600',
         prefixColor: 'text-emerald-400',
-        focusRing: 'focus:ring-emerald-400',
         pillActive: 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-sm',
         pillActiveLabel: 'text-emerald-500',
         btnBg: 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/30',
@@ -66,7 +73,6 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
         border: 'border-gray-100',
         amountColor: 'text-gray-900',
         prefixColor: 'text-gray-400',
-        focusRing: 'focus:ring-blue-500',
         pillActive: 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm',
         pillActiveLabel: 'text-blue-500',
         btnBg: 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30',
@@ -140,6 +146,39 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
                 autoFocus
                 required
               />
+            </div>
+          </div>
+
+          {/* Origem do Dinheiro (Cartão ou Conta) */}
+          <div>
+            <label className={`block text-sm font-medium ${palette.labelColor} mb-2 ml-1`}>
+              {isIncome ? 'Destino do Dinheiro' : 'Origem do Pagamento'}
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSource('credit')}
+                className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                  source === 'credit'
+                    ? palette.pillActive
+                    : 'bg-white border-gray-100 text-gray-400 hover:bg-gray-50'
+                }`}
+              >
+                <CreditCard size={18} className="mb-1" />
+                Cartão (Ciclo)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSource('bank')}
+                className={`flex-1 flex flex-col items-center justify-center py-2 px-2 rounded-xl text-sm font-bold border-2 transition-all ${
+                  source === 'bank'
+                    ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm'
+                    : 'bg-white border-gray-100 text-gray-400 hover:bg-gray-50'
+                }`}
+              >
+                <Landmark size={18} className="mb-1" />
+                Conta (Bancária)
+              </button>
             </div>
           </div>
 
