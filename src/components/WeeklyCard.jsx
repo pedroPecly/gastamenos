@@ -22,33 +22,33 @@ export default function WeeklyCard({ week, isExpanded, toggleWeek }) {
     return (
       <div 
         onClick={() => toggleWeek(weekNumber)}
-        className="bg-transparent border border-gray-200 rounded-2xl p-4 opacity-70 relative overflow-hidden flex flex-col cursor-pointer transition-all hover:bg-gray-50"
+        className="w-full bg-transparent border border-gray-200 dark:border-gray-800 rounded-2xl p-4 opacity-70 relative overflow-hidden flex flex-col cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-800/50"
       >
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-gray-600 flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-600 dark:text-gray-300 flex items-center gap-2">
               Semana {weekNumber}
-              <span className="text-[10px] bg-gray-200 text-gray-600 px-2 py-0.5 rounded-md uppercase">Encerrada</span>
+              <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-md uppercase">Encerrada</span>
             </h2>
-            <p className="text-xs font-medium text-gray-500 mt-1">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-1">
               {label}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-xs text-gray-500 font-medium mb-0.5">Gasto Total</p>
-              <span className="text-lg font-bold text-gray-700 block leading-none">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-0.5">Gasto Total</p>
+              <span className="text-lg font-bold text-gray-700 dark:text-gray-200 block leading-none">
                 {formatCurrency(totalSpent)}
               </span>
             </div>
-            {isExpanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+            {isExpanded ? <ChevronUp size={20} className="text-gray-400 dark:text-gray-500" /> : <ChevronDown size={20} className="text-gray-400 dark:text-gray-500" />}
           </div>
         </div>
 
         {isExpanded && (
-          <div className="mt-4 pt-3 border-t border-gray-200/50 space-y-2">
+          <div className="mt-4 pt-3 border-t border-gray-200/50 dark:border-gray-800 space-y-2">
             {expensesList.length === 0 && extraIncomeList.length === 0 ? (
-              <p className="text-xs text-center text-gray-400 py-2">Nenhum lançamento nesta semana.</p>
+              <p className="text-xs text-center text-gray-400 dark:text-gray-500 py-2">Nenhum lançamento nesta semana.</p>
             ) : (
               <>
                 {expensesList.map(exp => (
@@ -70,33 +70,33 @@ export default function WeeklyCard({ week, isExpanded, toggleWeek }) {
   const progress = calculateProgress(balance, budget);
   const isCurrent = status === 'current';
   
-  let textColor = "text-green-500";
-  let barColor = "bg-green-500";
+  let textColor = "text-green-500 dark:text-green-400";
+  let barColor = "bg-green-500 dark:bg-green-400";
   
   if (isNegative) {
-    textColor = "text-red-500";
-    barColor = "bg-red-500";
+    textColor = "text-red-500 dark:text-red-400";
+    barColor = "bg-red-500 dark:bg-red-500";
   } else if (isWarning) {
-    textColor = "text-orange-500";
-    barColor = "bg-orange-500";
+    textColor = "text-orange-500 dark:text-orange-400";
+    barColor = "bg-orange-500 dark:bg-orange-500";
   }
 
   return (
     <div 
       onClick={() => toggleWeek(weekNumber)}
-      className={`bg-white rounded-2xl p-5 shadow-sm border ${isCurrent ? 'border-blue-400 ring-2 ring-blue-50' : 'border-gray-100'} relative overflow-hidden transition-all cursor-pointer hover:shadow-md`}
+      className={`w-full bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm dark:shadow-none border ${isCurrent ? 'border-blue-400 ring-2 ring-blue-50 dark:ring-blue-900/30 dark:border-blue-500' : 'border-gray-100 dark:border-gray-800'} relative overflow-hidden transition-all cursor-pointer hover:shadow-md dark:hover:bg-gray-800/80`}
     >
-      <div className="absolute top-0 right-0 bg-gray-50 px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider rounded-bl-xl border-l border-b border-gray-100 flex items-center gap-1">
-        {isCurrent && <span className="text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded mr-1">ATUAL</span>}
+      <div className="absolute top-0 right-0 bg-gray-50 dark:bg-gray-800 px-3 py-1 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider rounded-bl-xl border-l border-b border-gray-100 dark:border-gray-800 flex items-center gap-1">
+        {isCurrent && <span className="text-blue-500 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/50 px-1.5 py-0.5 rounded mr-1">ATUAL</span>}
         {label}
       </div>
 
       <div className="flex justify-between items-end mb-3 mt-3">
         <div>
-          <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             Semana {weekNumber}
           </h2>
-          <p className="text-xs font-medium text-gray-400 mt-0.5">
+          <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mt-0.5">
             Orçamento: {formatCurrency(budget)}
           </p>
         </div>
@@ -106,13 +106,13 @@ export default function WeeklyCard({ week, isExpanded, toggleWeek }) {
               {formatCurrency(balance)}
             </span>
           </div>
-          <div className="bg-gray-50 p-1 rounded-full text-gray-400">
+          <div className="bg-gray-50 dark:bg-gray-800 p-1 rounded-full text-gray-400 dark:text-gray-500">
             {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </div>
         </div>
       </div>
       
-      <div className="relative w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mt-4">
+      <div className="relative w-full h-2.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mt-4">
         <div 
           className={`absolute left-0 top-0 h-full rounded-full transition-all duration-500 ease-out ${isNegative ? 'w-full bg-red-500 opacity-20' : barColor}`}
           style={{ width: isNegative ? '100%' : `${progress}%` }}
@@ -120,17 +120,17 @@ export default function WeeklyCard({ week, isExpanded, toggleWeek }) {
       </div>
       
       <div className="flex justify-between items-center mt-2">
-        <p className="text-xs text-gray-400 font-medium">
+        <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">
           {isNegative ? 'Orçamento estourado!' : `${progress.toFixed(0)}% restante`}
         </p>
         <div className="flex items-center gap-2">
           {totalExtraIncome > 0 && (
-            <p className="text-[11px] text-emerald-500 font-semibold">
+            <p className="text-[11px] text-emerald-500 dark:text-emerald-400 font-semibold">
               +{formatCurrency(totalExtraIncome)}
             </p>
           )}
           {totalSpent > 0 && (
-            <p className="text-[11px] text-gray-400 font-semibold">
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 font-semibold">
               -{formatCurrency(totalSpent)}
             </p>
           )}
@@ -138,10 +138,10 @@ export default function WeeklyCard({ week, isExpanded, toggleWeek }) {
       </div>
 
       {isExpanded && (
-        <div className="mt-5 pt-4 border-t border-gray-100 space-y-2">
-          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">Lançamentos da Semana</h4>
+        <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
+          <h4 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Lançamentos da Semana</h4>
           {expensesList.length === 0 && extraIncomeList.length === 0 ? (
-            <p className="text-sm text-center text-gray-400 py-3 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <p className="text-sm text-center text-gray-400 dark:text-gray-500 py-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
               Nenhum lançamento nesta semana.
             </p>
           ) : (
