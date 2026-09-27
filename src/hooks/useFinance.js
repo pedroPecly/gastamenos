@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { calculateCycleInfo, calculateWeeklyData } from '../utils/dateEngine';
+import { getCycleId, calculateCycleInfoFromId, calculateWeeklyData } from '../utils/dateEngine';
 
 const STORAGE_KEY = '@financeApp:state';
 
@@ -8,25 +8,56 @@ export function useFinance() {
     const savedState = localStorage.getItem(STORAGE_KEY);
     if (savedState) {
       const parsed = JSON.parse(savedState);
+      
+      // Migration to cycleSettings
+      if (parsed.monthlyIncome !== undefined && !parsed.cycleSettings) {
+        const currentId = getCycleId(new Date(), parsed.closingDay);
+        parsed.cycleSettings = {
+          [currentId]: {
+            monthlyIncome: parsed.monthlyIncome || 0,
+            initialBill: parsed.initialBill || 0,
+            savingsGoal: parsed.savingsGoal || 0
+          }
+        };
+        delete parsed.monthlyIncome;
+        delete parsed.initialBill;
+        delete parsed.savingsGoal;
+      }
+
       return {
         ...parsed,
-        initialBill: parsed.initialBill || 0,
         closingDay: parsed.closingDay || null,
-        savingsGoal: parsed.savingsGoal || 0,
         initialBankBalance: parsed.initialBankBalance || 0,
-        extraIncome: parsed.extraIncome || []
+        extraIncome: parsed.extraIncome || [],
+        cycleSettings: parsed.cycleSettings || {}
       };
     }
     return {
-      monthlyIncome: 0,
-      initialBill: 0,
       closingDay: null,
-      savingsGoal: 0,
       initialBankBalance: 0,
       expenses: [],
-      extraIncome: []
+      extraIncome: [],
+      cycleSettings: {}
     };
   });
+
+  const [selectedCycleId, setSelectedCycleId] = useState(() => getCycleId(new Date(), state.closingDay));
+
+  const getFallbackSettings = (cycleSettings, targetId) => {
+    const sortedIds = Object.keys(cycleSettings).sort();
+    const pastIds = sortedIds.filter(id => id < targetId);
+    if (pastIds.length > 0) {
+      const lastSettings = cycleSettings[pastIds[pastIds.length - 1]];
+      return {
+        monthlyIncome: lastSettings.monthlyIncome,
+        initialBill: 0,
+        savingsGoal: lastSettings.savingsGoal
+      };
+    }
+    return { monthlyIncome: 0, initialBill: 0, savingsGoal: 0 };
+  };
+
+  const currentSettings = state.cycleSettings[selectedCycleId] || getFallbackSettings(state.cycleSettings, selectedCycleId);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -35,12 +66,31 @@ export function useFinance() {
   const updateMonthlyIncome = (newIncome, newInitialBill = 0, newClosingDay = null, newSavingsGoal = 0, newBankBalance = 0) => {
     setState((prevState) => ({
       ...prevState,
-      monthlyIncome: newIncome,
-      initialBill: newInitialBill,
       closingDay: newClosingDay,
-      savingsGoal: newSavingsGoal,
-      initialBankBalance: newBankBalance
+      initialBankBalance: newBankBalance,
+      cycleSettings: {
+        ...prevState.cycleSettings,
+        [selectedCycleId]: {
+          monthlyIncome: newIncome,
+          initialBill: newInitialBill,
+          savingsGoal: newSavingsGoal
+        }
+      }
     }));
+  };
+
+  const changeCycle = (direction) => {
+    const [yearStr, monthStr] = selectedCycleId.split('-');
+    let year = parseInt(yearStr, 10);
+    let month = parseInt(monthStr, 10) + direction;
+    if (month > 12) {
+      month = 1;
+      year++;
+    } else if (month < 1) {
+      month = 12;
+      year--;
+    }
+    setSelectedCycleId(`${year}-${String(month).padStart(2, '0')}`);
   };
 
   // ----- DESPESAS -----
@@ -94,8 +144,8 @@ export function useFinance() {
   // ----- MOTOR DO CICLO FINANCEIRO -----
 
   const cycleInfo = useMemo(() => {
-    return calculateCycleInfo(state.closingDay);
-  }, [state.closingDay]);
+    return calculateCycleInfoFromId(selectedCycleId, state.closingDay);
+  }, [selectedCycleId, state.closingDay]);
 
   const currentCycleExpenses = useMemo(() => {
     return state.expenses.filter(exp => {
@@ -115,14 +165,14 @@ export function useFinance() {
 
   const weeklyData = useMemo(() => {
     return calculateWeeklyData({
-      monthlyIncome: state.monthlyIncome,
-      initialBill: state.initialBill,
-      savingsGoal: state.savingsGoal,
+      monthlyIncome: currentSettings.monthlyIncome,
+      initialBill: currentSettings.initialBill,
+      savingsGoal: currentSettings.savingsGoal,
       currentCycleExpenses,
       currentCycleExtraIncome,
       cycleInfo
     });
-  }, [state.monthlyIncome, state.initialBill, state.savingsGoal, currentCycleExpenses, currentCycleExtraIncome, cycleInfo]);
+  }, [currentSettings, currentCycleExpenses, currentCycleExtraIncome, cycleInfo]);
 
   // ----- CÁLCULOS GERAIS -----
 
@@ -136,15 +186,15 @@ export function useFinance() {
     .reduce((acc, curr) => acc + curr.amount, 0);
 
   // totalSpent: total de saídas do ciclo do cartão
-  const totalSpent = totalExpensesCredit + state.initialBill;
+  const totalSpent = totalExpensesCredit + currentSettings.initialBill;
 
   // availableOverall: renda + receitas extras no cartão − gastos no cartão − meta de economia
-  const rawAvailable = state.monthlyIncome + totalExtraIncomeCredit - totalSpent;
-  const availableOverall = rawAvailable - state.savingsGoal;
+  const rawAvailable = currentSettings.monthlyIncome + totalExtraIncomeCredit - totalSpent;
+  const availableOverall = rawAvailable - currentSettings.savingsGoal;
 
   // Economia Blindada
-  const safeSavings = Math.max(0, state.savingsGoal + Math.min(0, availableOverall));
-  const isSavingsCorroded = state.savingsGoal > 0 && safeSavings < state.savingsGoal;
+  const safeSavings = Math.max(0, currentSettings.savingsGoal + Math.min(0, availableOverall));
+  const isSavingsCorroded = currentSettings.savingsGoal > 0 && safeSavings < currentSettings.savingsGoal;
 
   // ----- CÁLCULOS DA CONTA BANCÁRIA -----
   const bankExpensesSum = state.expenses
@@ -158,10 +208,10 @@ export function useFinance() {
   const currentBankBalance = state.initialBankBalance - bankExpensesSum + bankIncomesSum;
 
   return {
-    monthlyIncome: state.monthlyIncome,
-    initialBill: state.initialBill,
+    monthlyIncome: currentSettings.monthlyIncome,
+    initialBill: currentSettings.initialBill,
+    savingsGoal: currentSettings.savingsGoal,
     closingDay: state.closingDay,
-    savingsGoal: state.savingsGoal,
     initialBankBalance: state.initialBankBalance,
     currentBankBalance,
     availableOverall,
@@ -177,6 +227,8 @@ export function useFinance() {
     addExtraIncome,
     deleteExtraIncome,
     weeklyData,
-    cycleInfo
+    cycleInfo,
+    selectedCycleId,
+    changeCycle
   };
 }

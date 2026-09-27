@@ -1,4 +1,4 @@
-import { Pencil, Calendar, AlertTriangle, PiggyBank, Landmark, Moon, Sun } from 'lucide-react';
+import { Pencil, Calendar, AlertTriangle, PiggyBank, Landmark, Moon, Sun, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useFinance } from '../contexts/FinanceContext';
 
 const formatCurrency = (value) => {
@@ -19,7 +19,8 @@ export default function DashboardHeader({ onOpenSettings, theme, toggleTheme }) 
     closingDay,
     currentBankBalance,
     initialBankBalance,
-    totalSpent
+    totalSpent,
+    changeCycle
   } = useFinance();
 
   return (
@@ -73,7 +74,18 @@ export default function DashboardHeader({ onOpenSettings, theme, toggleTheme }) 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between text-sm gap-y-3">
           <span className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-1.5">
             <Calendar size={16} className="text-blue-500 dark:text-blue-400" />
-            Fatura de {cycleInfo.referenceMonthName} <span className="text-gray-300 dark:text-gray-600 mx-0.5">•</span> <strong className="text-gray-800 dark:text-gray-200">{formatCurrency(totalSpent)}</strong>
+            <div className="flex items-center gap-1 mx-1 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-1 py-0.5 border border-gray-100 dark:border-gray-700/50">
+              <button onClick={() => changeCycle(-1)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-gray-500 dark:text-gray-400 active:scale-95">
+                <ChevronLeft size={14} />
+              </button>
+              <span className="min-w-[70px] text-center font-bold text-gray-700 dark:text-gray-200 capitalize">
+                {cycleInfo.referenceMonthName.substring(0, 3)}/{cycleInfo.referenceYear.toString().substring(2)}
+              </span>
+              <button onClick={() => changeCycle(1)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-gray-500 dark:text-gray-400 active:scale-95">
+                <ChevronRight size={14} />
+              </button>
+            </div>
+            <span className="text-gray-300 dark:text-gray-600 mx-0.5">•</span> <strong className="text-gray-800 dark:text-gray-200">{formatCurrency(totalSpent)}</strong>
           </span>
           <div className="flex items-center gap-2">
             {totalExtraIncomeSum > 0 && (

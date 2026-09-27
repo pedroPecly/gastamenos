@@ -1,39 +1,48 @@
-export const calculateCycleInfo = (closingDayStr) => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+export const getCycleId = (date, closingDayStr) => {
+  const closingDay = closingDayStr ? parseInt(closingDayStr, 10) : null;
+  if (!closingDay || closingDay < 1 || closingDay > 31) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+  }
+  let month = date.getMonth();
+  let year = date.getFullYear();
+  if (date.getDate() > closingDay) {
+    month++;
+    if (month > 11) {
+      month = 0;
+      year++;
+    }
+  }
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
+};
+
+export const calculateCycleInfoFromId = (cycleId, closingDayStr, todayDate = new Date()) => {
+  const today = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+  
+  const [yearStr, monthStr] = cycleId.split('-');
+  const refYear = parseInt(yearStr, 10);
+  const refMonth = parseInt(monthStr, 10) - 1; // 0-indexed
 
   let start, end;
   const closingDay = closingDayStr ? parseInt(closingDayStr, 10) : null;
 
   if (!closingDay || closingDay < 1 || closingDay > 31) {
-    start = new Date(today.getFullYear(), today.getMonth(), 1);
-    end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    start = new Date(refYear, refMonth, 1);
+    end = new Date(refYear, refMonth + 1, 0);
   } else {
     const getValidDate = (y, m, d) => {
       const lastDayOfMonth = new Date(y, m + 1, 0).getDate();
       return new Date(y, m, Math.min(d, lastDayOfMonth));
     };
 
-    let endCycleMonth = today.getMonth();
-    let endCycleYear = today.getFullYear();
-
-    if (today.getDate() > closingDay) {
-      endCycleMonth++;
-      if (endCycleMonth > 11) {
-        endCycleMonth = 0;
-        endCycleYear++;
-      }
+    end = getValidDate(refYear, refMonth, closingDay);
+    
+    let startMonth = refMonth - 1;
+    let startYear = refYear;
+    if (startMonth < 0) {
+      startMonth = 11;
+      startYear--;
     }
-
-    end = getValidDate(endCycleYear, endCycleMonth, closingDay);
-
-    let startCycleMonth = endCycleMonth - 1;
-    let startCycleYear = endCycleYear;
-    if (startCycleMonth < 0) {
-      startCycleMonth = 11;
-      startCycleYear--;
-    }
-    const prevEnd = getValidDate(startCycleYear, startCycleMonth, closingDay);
+    const prevEnd = getValidDate(startYear, startMonth, closingDay);
     start = new Date(prevEnd);
     start.setDate(start.getDate() + 1);
   }
