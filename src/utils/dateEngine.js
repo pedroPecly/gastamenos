@@ -5,7 +5,7 @@ export const getCycleId = (date, closingDayStr) => {
   }
   let month = date.getMonth();
   let year = date.getFullYear();
-  if (date.getDate() > closingDay) {
+  if (date.getDate() >= closingDay) {
     month++;
     if (month > 11) {
       month = 0;
@@ -30,11 +30,14 @@ export const calculateCycleInfoFromId = (cycleId, closingDayStr, todayDate = new
     end = new Date(refYear, refMonth + 1, 0);
   } else {
     const getValidDate = (y, m, d) => {
+      if (d === 0) {
+        return new Date(y, m, 0);
+      }
       const lastDayOfMonth = new Date(y, m + 1, 0).getDate();
       return new Date(y, m, Math.min(d, lastDayOfMonth));
     };
 
-    end = getValidDate(refYear, refMonth, closingDay);
+    end = getValidDate(refYear, refMonth, closingDay - 1);
     
     let startMonth = refMonth - 1;
     let startYear = refYear;
@@ -42,7 +45,7 @@ export const calculateCycleInfoFromId = (cycleId, closingDayStr, todayDate = new
       startMonth = 11;
       startYear--;
     }
-    const prevEnd = getValidDate(startYear, startMonth, closingDay);
+    const prevEnd = getValidDate(startYear, startMonth, closingDay - 1);
     start = new Date(prevEnd);
     start.setDate(start.getDate() + 1);
   }
@@ -78,6 +81,7 @@ export const calculateWeeklyData = ({
   monthlyIncome,
   initialBill,
   savingsGoal,
+  budgetMode = 'equal',
   currentCycleExpenses,
   currentCycleExtraIncome,
   cycleInfo
@@ -138,6 +142,47 @@ export const calculateWeeklyData = ({
     weekNum++;
   }
 
+  // --- MERGE MINI-WEEKS LOGIC ---
+  if (budgetMode === 'equal' && weeks.length > 1) {
+    const lastWeek = weeks[weeks.length - 1];
+    if (lastWeek.daysInWeek <= 3) {
+      const prevWeek = weeks[weeks.length - 2];
+      
+      prevWeek.endDateStr = lastWeek.endDateStr;
+      
+      const prevStart = new Date(prevWeek.startDateStr);
+      const newEnd = new Date(prevWeek.endDateStr);
+      const formatter = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' });
+      const fmtStart = formatter.format(prevStart).replace('.', '');
+      const fmtEnd = formatter.format(newEnd).replace('.', '');
+      
+      prevWeek.label = `${fmtStart} a ${fmtEnd}`;
+      prevWeek.daysInWeek += lastWeek.daysInWeek;
+      
+      const startT = prevStart.getTime();
+      const endT = newEnd.getTime();
+      
+      if (todayTime > endT) {
+        prevWeek.status = 'passed';
+      } else if (todayTime >= startT && todayTime <= endT) {
+        prevWeek.status = 'current';
+      } else {
+        prevWeek.status = 'future';
+      }
+      
+      if (prevWeek.status === 'current') {
+        prevWeek.activeDays = Math.round((newEnd - today) / (1000 * 60 * 60 * 24)) + 1;
+      } else if (prevWeek.status === 'future') {
+        prevWeek.activeDays = prevWeek.daysInWeek;
+      } else {
+        prevWeek.activeDays = 0;
+      }
+      
+      weeks.pop();
+    }
+  }
+  // ------------------------------
+
   const findWeek = (isoDate) => {
     const t = toMidnightTime(isoDate);
     return weeks.find(w => {
@@ -168,12 +213,20 @@ export const calculateWeeklyData = ({
   });
 
   const baseAvailable = monthlyIncome - initialBill - savingsGoal;
-  const dailyBudgetBase = daysInCycle > 0 ? baseAvailable / daysInCycle : 0;
-
-  weeks.forEach(week => {
-    week.budget  = dailyBudgetBase * week.daysInWeek;
-    week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
-  });
+  
+  if (budgetMode === 'daily') {
+    const dailyBudgetBase = daysInCycle > 0 ? baseAvailable / daysInCycle : 0;
+    weeks.forEach(week => {
+      week.budget  = dailyBudgetBase * week.daysInWeek;
+      week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
+    });
+  } else {
+    const weeklyBudgetBase = weeks.length > 0 ? baseAvailable / weeks.length : 0;
+    weeks.forEach(week => {
+      week.budget  = weeklyBudgetBase;
+      week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
+    });
+  }
 
   const passedNetBalance = weeks
     .filter(w => w.status === 'passed')
@@ -181,15 +234,24 @@ export const calculateWeeklyData = ({
 
   if (Math.abs(passedNetBalance) > 0.001) {
     const activeWeeks = weeks.filter(w => w.status !== 'passed');
-    const activeDaysTotal = activeWeeks.reduce((acc, w) => acc + w.daysInWeek, 0);
 
-    if (activeDaysTotal > 0) {
-      const adjustmentPerDay = passedNetBalance / activeDaysTotal;
-
-      activeWeeks.forEach(week => {
-        week.budget  = week.budget + adjustmentPerDay * week.daysInWeek;
-        week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
-      });
+    if (budgetMode === 'daily') {
+      const activeDaysTotal = activeWeeks.reduce((acc, w) => acc + w.daysInWeek, 0);
+      if (activeDaysTotal > 0) {
+        const adjustmentPerDay = passedNetBalance / activeDaysTotal;
+        activeWeeks.forEach(week => {
+          week.budget  = week.budget + adjustmentPerDay * week.daysInWeek;
+          week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
+        });
+      }
+    } else {
+      if (activeWeeks.length > 0) {
+        const adjustmentPerWeek = passedNetBalance / activeWeeks.length;
+        activeWeeks.forEach(week => {
+          week.budget  = week.budget + adjustmentPerWeek;
+          week.balance = week.budget - week.totalSpent + week.totalExtraIncome;
+        });
+      }
     }
   }
 

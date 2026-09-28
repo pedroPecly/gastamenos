@@ -29,7 +29,8 @@ export function useFinance() {
         closingDay: parsed.closingDay || null,
         initialBankBalance: parsed.initialBankBalance || 0,
         extraIncome: parsed.extraIncome || [],
-        cycleSettings: parsed.cycleSettings || {}
+        cycleSettings: parsed.cycleSettings || {},
+        budgetMode: parsed.budgetMode || 'equal'
       };
     }
     return {
@@ -37,7 +38,8 @@ export function useFinance() {
       initialBankBalance: 0,
       expenses: [],
       extraIncome: [],
-      cycleSettings: {}
+      cycleSettings: {},
+      budgetMode: 'equal'
     };
   });
 
@@ -63,11 +65,12 @@ export function useFinance() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const updateMonthlyIncome = (newIncome, newInitialBill = 0, newClosingDay = null, newSavingsGoal = 0, newBankBalance = 0) => {
+  const updateMonthlyIncome = (newIncome, newInitialBill = 0, newClosingDay = null, newSavingsGoal = 0, newBankBalance = 0, newBudgetMode = 'equal') => {
     setState((prevState) => ({
       ...prevState,
       closingDay: newClosingDay,
       initialBankBalance: newBankBalance,
+      budgetMode: newBudgetMode,
       cycleSettings: {
         ...prevState.cycleSettings,
         [selectedCycleId]: {
@@ -168,11 +171,12 @@ export function useFinance() {
       monthlyIncome: currentSettings.monthlyIncome,
       initialBill: currentSettings.initialBill,
       savingsGoal: currentSettings.savingsGoal,
+      budgetMode: state.budgetMode,
       currentCycleExpenses,
       currentCycleExtraIncome,
       cycleInfo
     });
-  }, [currentSettings, currentCycleExpenses, currentCycleExtraIncome, cycleInfo]);
+  }, [currentSettings, state.budgetMode, currentCycleExpenses, currentCycleExtraIncome, cycleInfo]);
 
   // ----- CÁLCULOS GERAIS -----
 
@@ -213,6 +217,7 @@ export function useFinance() {
     savingsGoal: currentSettings.savingsGoal,
     closingDay: state.closingDay,
     initialBankBalance: state.initialBankBalance,
+    budgetMode: state.budgetMode,
     currentBankBalance,
     availableOverall,
     safeSavings,

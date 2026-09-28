@@ -3,13 +3,14 @@ import { Wallet, X, PiggyBank, Landmark, Download, Upload, ShieldCheck } from 'l
 import { useFinance } from '../contexts/FinanceContext';
 
 export default function InitialSetupModal({ isOpen, onClose }) {
-  const { monthlyIncome, initialBill, closingDay, savingsGoal, initialBankBalance, updateMonthlyIncome } = useFinance();
+  const { monthlyIncome, initialBill, closingDay, savingsGoal, initialBankBalance, budgetMode, updateMonthlyIncome } = useFinance();
 
   const [incomeInput, setIncomeInput] = useState('');
   const [billInput, setBillInput] = useState('');
   const [closingDayInput, setClosingDayInput] = useState('');
   const [savingsInput, setSavingsInput] = useState('');
   const [bankBalanceInput, setBankBalanceInput] = useState('');
+  const [budgetModeInput, setBudgetModeInput] = useState('equal');
   const fileInputRef = useRef(null);
 
   // Sincroniza inputs quando abre
@@ -25,8 +26,10 @@ export default function InitialSetupModal({ isOpen, onClose }) {
       setSavingsInput(savingsGoal > 0 ? String(savingsGoal) : '');
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setBankBalanceInput(initialBankBalance > 0 ? String(initialBankBalance) : '');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBudgetModeInput(budgetMode || 'equal');
     }
-  }, [isOpen, monthlyIncome, initialBill, closingDay, savingsGoal, initialBankBalance]);
+  }, [isOpen, monthlyIncome, initialBill, closingDay, savingsGoal, initialBankBalance, budgetMode]);
 
   if (!isOpen) return null;
 
@@ -38,7 +41,8 @@ export default function InitialSetupModal({ isOpen, onClose }) {
         Number(billInput), 
         closingDayInput ? Number(closingDayInput) : null,
         Number(savingsInput),
-        Number(bankBalanceInput)
+        Number(bankBalanceInput),
+        budgetModeInput
       );
       onClose();
     }
@@ -168,6 +172,35 @@ export default function InitialSetupModal({ isOpen, onClose }) {
                   className="w-full bg-emerald-50 dark:bg-emerald-900/20 border-0 rounded-2xl p-4 pl-12 focus:ring-2 focus:ring-emerald-500 outline-none text-lg font-semibold text-emerald-700 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800/50"
                   placeholder="0.00"
                 />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Distribuição do Orçamento</label>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Como prefere dividir o dinheiro pelas semanas?</p>
+              <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setBudgetModeInput('equal')}
+                  className={`flex-1 py-3 px-3 rounded-xl text-xs font-bold transition-all ${
+                    budgetModeInput === 'equal'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-none'
+                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Otimizado (Igual)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBudgetModeInput('daily')}
+                  className={`flex-1 py-3 px-3 rounded-xl text-xs font-bold transition-all ${
+                    budgetModeInput === 'daily'
+                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-none'
+                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Padrão (Como era antes)
+                </button>
               </div>
             </div>
 
