@@ -1,6 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { Wallet, X, PiggyBank, Landmark, Download, Upload, ShieldCheck } from 'lucide-react';
+import { Wallet, X, PiggyBank, Landmark, Download, Upload, ShieldCheck, Settings, CreditCard, CalendarCog } from 'lucide-react';
 import { useFinance } from '../contexts/FinanceContext';
+
+// Componente auxiliar para seções visuais
+function Section({ icon: Icon, iconColor, title, children }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className={`p-1.5 rounded-lg ${iconColor}`}>
+          <Icon size={14} className="text-white" />
+        </div>
+        <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 tracking-wide">{title}</h4>
+      </div>
+      <div className="space-y-3 pl-1">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function InitialSetupModal({ isOpen, onClose }) {
   const { monthlyIncome, initialBill, closingDay, savingsGoal, initialBankBalance, budgetMode, updateMonthlyIncome } = useFinance();
@@ -76,7 +93,7 @@ export default function InitialSetupModal({ isOpen, onClose }) {
       }
     };
     reader.readAsText(file);
-    e.target.value = null; // Reseta o input
+    e.target.value = null;
   };
 
   return (
@@ -96,156 +113,172 @@ export default function InitialSetupModal({ isOpen, onClose }) {
         </div>
         
         {/* Scrollable Body */}
-        <div className="overflow-y-auto p-6 sm:p-8 pt-5 flex-1">
-          <form onSubmit={handleSave} className="space-y-5">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Renda Mensal (Teto)</label>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Quanto você ganha ou planeja gastar no ciclo?</p>
-              <div className="relative">
-                <span className="absolute left-4 top-4 text-gray-400 dark:text-gray-500 font-semibold">R$</span>
-                <input
-                  type="number"
-                  value={incomeInput}
-                  onChange={(e) => setIncomeInput(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border-0 rounded-2xl p-4 pl-12 focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-            </div>
+        <div className="overflow-y-auto p-6 sm:p-8 pt-6 flex-1">
+          <form onSubmit={handleSave} className="space-y-8">
 
-            <div>
-              <label className="block text-sm font-bold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
-                <Landmark size={16} /> Saldo da Conta (Guardado)
-              </label>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Opcional. Dinheiro no banco, livre do cartão.</p>
-              <div className="relative">
-                <span className="absolute left-4 top-4 text-blue-400 dark:text-blue-500 font-semibold">R$</span>
-                <input
-                  type="number"
-                  value={bankBalanceInput}
-                  onChange={(e) => setBankBalanceInput(e.target.value)}
-                  className="w-full bg-blue-50 dark:bg-blue-900/20 border-0 rounded-2xl p-4 pl-12 focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold text-blue-700 dark:text-blue-300 placeholder-blue-300 dark:placeholder-blue-800/50"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            {/* ═══════════════ SEÇÃO 1: FINANÇAS DO CICLO ═══════════════ */}
+            <Section icon={CreditCard} iconColor="bg-gray-700 dark:bg-gray-600" title="Finanças do Ciclo">
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Fechamento</label>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-2">Vazio = Mês Civil</p>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Renda Mensal (Teto)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 text-gray-400 dark:text-gray-500 font-semibold text-sm">R$</span>
+                  <input
+                    type="number"
+                    value={incomeInput}
+                    onChange={(e) => setIncomeInput(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Fatura Atual (Gasto Passado)</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 text-red-400 dark:text-red-500 font-semibold text-sm">R$</span>
+                  <input
+                    type="number"
+                    value={billInput}
+                    onChange={(e) => setBillInput(e.target.value)}
+                    className="w-full bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none text-base font-semibold text-red-600 dark:text-red-400 placeholder-gray-300 dark:placeholder-gray-600"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                  <PiggyBank size={12} /> Meta de Economia
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 text-emerald-400 dark:text-emerald-500 font-semibold text-sm">R$</span>
+                  <input
+                    type="number"
+                    value={savingsInput}
+                    onChange={(e) => setSavingsInput(e.target.value)}
+                    className="w-full bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none text-base font-semibold text-emerald-700 dark:text-emerald-400 placeholder-gray-300 dark:placeholder-gray-600"
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Opcional. Quanto quer "blindar" do limite?</p>
+              </div>
+            </Section>
+
+            {/* Separador */}
+            <div className="border-t border-gray-100 dark:border-gray-800" />
+
+            {/* ═══════════════ SEÇÃO 2: CONTA BANCÁRIA ═══════════════ */}
+            <Section icon={Landmark} iconColor="bg-blue-600 dark:bg-blue-500" title="Conta Bancária">
+              <div>
+                <label className="block text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1.5 uppercase tracking-wider">Saldo Guardado</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3.5 text-blue-400 dark:text-blue-500 font-semibold text-sm">R$</span>
+                  <input
+                    type="number"
+                    value={bankBalanceInput}
+                    onChange={(e) => setBankBalanceInput(e.target.value)}
+                    className="w-full bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base font-semibold text-blue-700 dark:text-blue-300 placeholder-gray-300 dark:placeholder-gray-600"
+                    placeholder="0.00"
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Opcional. Dinheiro no banco, independente do cartão.</p>
+              </div>
+            </Section>
+
+            {/* Separador */}
+            <div className="border-t border-gray-100 dark:border-gray-800" />
+
+            {/* ═══════════════ SEÇÃO 3: PREFERÊNCIAS ═══════════════ */}
+            <Section icon={CalendarCog} iconColor="bg-violet-600 dark:bg-violet-500" title="Preferências">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Dia de Fechamento da Fatura</label>
                 <input
                   type="number"
                   min="1"
                   max="31"
                   value={closingDayInput}
                   onChange={(e) => setClosingDayInput(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border-0 rounded-2xl p-4 focus:ring-2 focus:ring-blue-500 outline-none text-lg font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600"
-                  placeholder="Ex: 10"
+                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3.5 focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none text-base font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600"
+                  placeholder="Ex: 28"
                 />
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Vazio = Mês civil (1 a 31).</p>
               </div>
+
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Fatura Atual</label>
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-2">Gasto passado</p>
-                <input
-                  type="number"
-                  value={billInput}
-                  onChange={(e) => setBillInput(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border-0 rounded-2xl p-4 focus:ring-2 focus:ring-red-400 outline-none text-lg font-semibold text-red-600 dark:text-red-400 placeholder-gray-300 dark:placeholder-gray-600"
-                  placeholder="0.00"
-                />
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Distribuição do Orçamento</label>
+                <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setBudgetModeInput('equal')}
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      budgetModeInput === 'equal'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-none'
+                        : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Otimizado (Igual)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBudgetModeInput('daily')}
+                    className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                      budgetModeInput === 'daily'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-none'
+                        : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    Padrão (Proporcional)
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Como dividir o dinheiro entre as semanas.</p>
               </div>
-            </div>
+            </Section>
 
-            <div>
-              <label className="block text-sm font-bold text-emerald-600 dark:text-emerald-400 mb-1 flex items-center gap-1">
-                <PiggyBank size={16} /> Meta de Economia
-              </label>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Opcional. Quanto quer "blindar" do limite?</p>
-              <div className="relative">
-                <span className="absolute left-4 top-4 text-emerald-400 dark:text-emerald-500 font-semibold">R$</span>
-                <input
-                  type="number"
-                  value={savingsInput}
-                  onChange={(e) => setSavingsInput(e.target.value)}
-                  className="w-full bg-emerald-50 dark:bg-emerald-900/20 border-0 rounded-2xl p-4 pl-12 focus:ring-2 focus:ring-emerald-500 outline-none text-lg font-semibold text-emerald-700 dark:text-emerald-400 placeholder-emerald-300 dark:placeholder-emerald-800/50"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Distribuição do Orçamento</label>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-2">Como prefere dividir o dinheiro pelas semanas?</p>
-              <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-2xl">
-                <button
-                  type="button"
-                  onClick={() => setBudgetModeInput('equal')}
-                  className={`flex-1 py-3 px-3 rounded-xl text-xs font-bold transition-all ${
-                    budgetModeInput === 'equal'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-none'
-                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Otimizado (Igual)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBudgetModeInput('daily')}
-                  className={`flex-1 py-3 px-3 rounded-xl text-xs font-bold transition-all ${
-                    budgetModeInput === 'daily'
-                      ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm dark:shadow-none'
-                      : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'
-                  }`}
-                >
-                  Padrão (Como era antes)
-                </button>
-              </div>
-            </div>
-
+            {/* ═══════════════ BOTÃO SALVAR ═══════════════ */}
             <button
               type="submit"
-              className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-lg py-4 rounded-2xl hover:bg-black dark:hover:bg-gray-200 active:scale-[0.98] transition-all mt-4 shadow-md"
+              className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-base py-4 rounded-2xl hover:bg-black dark:hover:bg-gray-200 active:scale-[0.98] transition-all shadow-md"
             >
               Salvar Configurações
             </button>
           </form>
 
-          {/* --- Seção de Segurança / Backup --- */}
-          <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
-            <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 mb-4">
-              <ShieldCheck size={18} className="text-blue-500" />
-              Segurança de Dados
-            </h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              Seus dados ficam salvos apenas no seu navegador. Faça um backup regular para não perder seu histórico financeiro caso limpe o celular.
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                type="button"
-                onClick={handleExport}
-                className="flex items-center justify-center gap-2 py-3 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
-              >
-                <Download size={16} />
-                Exportar
-              </button>
-              <button 
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center gap-2 py-3 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
-              >
-                <Upload size={16} />
-                Importar
-              </button>
-              <input 
-                type="file" 
-                accept=".json" 
-                className="hidden" 
-                ref={fileInputRef}
-                onChange={handleImport}
-              />
-            </div>
+          {/* Separador final */}
+          <div className="border-t border-gray-100 dark:border-gray-800 mt-8" />
+
+          {/* ═══════════════ SEÇÃO 4: SEGURANÇA ═══════════════ */}
+          <div className="pt-6 pb-2">
+            <Section icon={ShieldCheck} iconColor="bg-amber-500 dark:bg-amber-600" title="Segurança de Dados">
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
+                Seus dados ficam salvos apenas neste navegador. Exporte regularmente para não perder seu histórico.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  type="button"
+                  onClick={handleExport}
+                  className="flex items-center justify-center gap-2 py-3 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
+                >
+                  <Download size={15} />
+                  Exportar
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center justify-center gap-2 py-3 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
+                >
+                  <Upload size={15} />
+                  Importar
+                </button>
+                <input 
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  ref={fileInputRef}
+                  onChange={handleImport}
+                />
+              </div>
+            </Section>
           </div>
         </div>
 
