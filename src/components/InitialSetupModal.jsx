@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Wallet, X, PiggyBank, Landmark, Download, Upload, ShieldCheck, Settings, CreditCard, CalendarCog } from 'lucide-react';
+import { Wallet, X, PiggyBank, Landmark, Download, Upload, ShieldCheck, Settings, CreditCard, CalendarCog, FileSpreadsheet } from 'lucide-react';
 import { useFinance } from '../contexts/FinanceContext';
 import CurrencyInput from './CurrencyInput';
 
@@ -21,7 +21,13 @@ function Section({ icon: Icon, iconColor, title, children }) {
 }
 
 export default function InitialSetupModal({ isOpen, onClose }) {
-  const { monthlyIncome, initialBill, closingDay, savingsGoal, initialBankBalance, budgetMode, updateMonthlyIncome } = useFinance();
+  const {
+    monthlyIncome, initialBill, closingDay, savingsGoal, initialBankBalance,
+    budgetMode, updateMonthlyIncome,
+    weeklyData, cycleInfo, expenses, extraIncome,
+    totalSpent, totalExtraIncomeSum, availableOverall, safeSavings, isSavingsCorroded,
+    currentBankBalance
+  } = useFinance();
 
   const [incomeInput, setIncomeInput] = useState('');
   const [billInput, setBillInput] = useState('');
@@ -75,6 +81,68 @@ export default function InitialSetupModal({ isOpen, onClose }) {
     a.href = url;
     a.download = `gastamenos-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
+  };
+
+  const handleExportExcel = async () => {
+    const allTransactions = [
+      ...expenses.map(e => ({ ...e, _tipo: 'Despesa' })),
+      ...extraIncome.map(i => ({ ...i, _tipo: 'Receita Extra' }))
+    ];
+
+    if (allTransactions.length === 0) return alert('Nenhuma transação neste ciclo para exportar.');
+
+    // Ordenar por data (mais antiga primeiro)
+    allTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Formatar para a planilha
+    const excelData = allTransactions.map(t => ({
+      'Data': new Date(t.date).toLocaleDateString('pt-BR'),
+      'Hora': new Date(t.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      'Descrição': t.description,
+      'Valor (R$)': t.amount,
+      'Tipo': t._tipo,
+      'Origem': t.source === 'bank' ? 'Conta Bancária' : 'Cartão/Ciclo',
+      'Semana': t.weekNumber || '-'
+    }));
+
+    // Linha em branco + total
+    const totalGastos = expenses.reduce((s, e) => s + e.amount, 0);
+    excelData.push({});
+    excelData.push({
+      'Data': '',
+      'Hora': '',
+      'Descrição': 'TOTAL DE GASTOS',
+      'Valor (R$)': Number(totalGastos.toFixed(2)),
+      'Tipo': '',
+      'Origem': '',
+      'Semana': ''
+    });
+
+    try {
+      const XLSX = await import('xlsx');
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      worksheet['!cols'] = [
+        { wch: 12 },  // Data
+        { wch: 8 },   // Hora
+        { wch: 35 },  // Descrição
+        { wch: 14 },  // Valor
+        { wch: 15 },  // Tipo
+        { wch: 15 },  // Origem
+        { wch: 10 }   // Semana
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Transações');
+
+      const mesRef = cycleInfo.referenceMonthName;
+      const safeName = mesRef.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      XLSX.writeFile(workbook, `GastaMenos_${safeName}_${cycleInfo.referenceYear}.xlsx`);
+    } catch (err) {
+      console.error('Erro ao exportar excel:', err);
+      alert('Ocorreu um erro ao gerar a planilha.');
+    }
   };
 
   const handleImport = (e) => {
@@ -246,26 +314,34 @@ export default function InitialSetupModal({ isOpen, onClose }) {
 
           {/* ═══════════════ SEÇÃO 4: SEGURANÇA ═══════════════ */}
           <div className="pt-6 pb-2">
-            <Section icon={ShieldCheck} iconColor="bg-amber-500 dark:bg-amber-600" title="Segurança de Dados">
+            <Section icon={ShieldCheck} iconColor="bg-amber-500 dark:bg-amber-600" title="Segurança e Relatórios">
               <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-relaxed">
-                Seus dados ficam salvos apenas neste navegador. Exporte regularmente para não perder seu histórico.
+                Seus dados ficam salvos apenas neste navegador. Você pode gerar planilhas ou fazer backup de segurança.
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
+                <button 
+                  type="button"
+                  onClick={handleExportExcel}
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 px-1 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-colors border border-emerald-200 dark:border-emerald-800/30 shadow-sm"
+                >
+                  <FileSpreadsheet size={18} className="text-emerald-600 dark:text-emerald-500" />
+                  Planilha
+                </button>
                 <button 
                   type="button"
                   onClick={handleExport}
-                  className="flex items-center justify-center gap-2 py-3 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 px-1 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
                 >
-                  <Download size={15} />
-                  Exportar
+                  <Download size={18} className="text-gray-500 dark:text-gray-400" />
+                  Backup
                 </button>
                 <button 
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center gap-2 py-3 px-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 py-3 px-1 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-colors border border-gray-200 dark:border-gray-700 shadow-sm"
                 >
-                  <Upload size={15} />
-                  Importar
+                  <Upload size={18} className="text-blue-500 dark:text-blue-400" />
+                  Restaurar
                 </button>
                 <input 
                   type="file" 
