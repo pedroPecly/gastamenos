@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, TrendingDown, TrendingUp, CreditCard, Landmark } from 'lucide-react';
+import CurrencyInput from './CurrencyInput';
 
 export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData }) {
   const [transactionType, setTransactionType] = useState('expense'); // 'expense' | 'income'
@@ -135,13 +136,11 @@ export default function AddExpenseModal({ isOpen, onClose, onSave, weeklyData })
                 <span className={`text-2xl ${palette.prefixColor} mr-2 mt-2`}>
                   {isIncome ? '+R$' : 'R$'}
                 </span>
-                <input
-                  type="number"
-                  step="0.01"
+                <CurrencyInput
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className={`w-36 bg-transparent border-0 p-0 text-center focus:ring-0 outline-none placeholder-gray-300 dark:placeholder-gray-600`}
-                  placeholder="0.00"
+                  onChange={setAmount}
+                  className={`w-40 bg-transparent border-0 p-0 text-center focus:ring-0 outline-none placeholder-gray-300 dark:placeholder-gray-600`}
+                  placeholder="0,00"
                   required
                 />
               </div>

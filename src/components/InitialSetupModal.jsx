@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Wallet, X, PiggyBank, Landmark, Download, Upload, ShieldCheck, Settings, CreditCard, CalendarCog } from 'lucide-react';
 import { useFinance } from '../contexts/FinanceContext';
+import CurrencyInput from './CurrencyInput';
 
 // Componente auxiliar para seções visuais
 function Section({ icon: Icon, iconColor, title, children }) {
@@ -122,12 +123,11 @@ export default function InitialSetupModal({ isOpen, onClose }) {
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Renda Mensal (Teto)</label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-gray-400 dark:text-gray-500 font-semibold text-sm">R$</span>
-                  <input
-                    type="number"
+                  <CurrencyInput
                     value={incomeInput}
-                    onChange={(e) => setIncomeInput(e.target.value)}
+                    onChange={setIncomeInput}
                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base font-semibold text-gray-900 dark:text-white placeholder-gray-300 dark:placeholder-gray-600"
-                    placeholder="0.00"
+                    placeholder="0,00"
                     required
                   />
                 </div>
@@ -137,12 +137,11 @@ export default function InitialSetupModal({ isOpen, onClose }) {
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Fatura Atual (Gasto Passado)</label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-red-400 dark:text-red-500 font-semibold text-sm">R$</span>
-                  <input
-                    type="number"
+                  <CurrencyInput
                     value={billInput}
-                    onChange={(e) => setBillInput(e.target.value)}
+                    onChange={setBillInput}
                     className="w-full bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-red-400 focus:border-transparent outline-none text-base font-semibold text-red-600 dark:text-red-400 placeholder-gray-300 dark:placeholder-gray-600"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
               </div>
@@ -153,12 +152,11 @@ export default function InitialSetupModal({ isOpen, onClose }) {
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-emerald-400 dark:text-emerald-500 font-semibold text-sm">R$</span>
-                  <input
-                    type="number"
+                  <CurrencyInput
                     value={savingsInput}
-                    onChange={(e) => setSavingsInput(e.target.value)}
+                    onChange={setSavingsInput}
                     className="w-full bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none text-base font-semibold text-emerald-700 dark:text-emerald-400 placeholder-gray-300 dark:placeholder-gray-600"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Opcional. Quanto quer "blindar" do limite?</p>
@@ -174,12 +172,11 @@ export default function InitialSetupModal({ isOpen, onClose }) {
                 <label className="block text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1.5 uppercase tracking-wider">Saldo Guardado</label>
                 <div className="relative">
                   <span className="absolute left-4 top-3.5 text-blue-400 dark:text-blue-500 font-semibold text-sm">R$</span>
-                  <input
-                    type="number"
+                  <CurrencyInput
                     value={bankBalanceInput}
-                    onChange={(e) => setBankBalanceInput(e.target.value)}
+                    onChange={setBankBalanceInput}
                     className="w-full bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-3.5 pl-11 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-base font-semibold text-blue-700 dark:text-blue-300 placeholder-gray-300 dark:placeholder-gray-600"
-                    placeholder="0.00"
+                    placeholder="0,00"
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 ml-1">Opcional. Dinheiro no banco, independente do cartão.</p>

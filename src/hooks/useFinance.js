@@ -53,13 +53,22 @@ export function useFinance() {
       return {
         monthlyIncome: lastSettings.monthlyIncome,
         initialBill: 0,
-        savingsGoal: lastSettings.savingsGoal
+        savingsGoal: lastSettings.savingsGoal,
+        initialBankBalance: lastSettings.initialBankBalance
       };
     }
-    return { monthlyIncome: 0, initialBill: 0, savingsGoal: 0 };
+    return { monthlyIncome: 0, initialBill: 0, savingsGoal: 0, initialBankBalance: undefined };
   };
 
-  const currentSettings = state.cycleSettings[selectedCycleId] || getFallbackSettings(state.cycleSettings, selectedCycleId);
+  const fallbackSettings = getFallbackSettings(state.cycleSettings, selectedCycleId);
+  const cycleSetting = state.cycleSettings[selectedCycleId] || {};
+  
+  const currentSettings = {
+    monthlyIncome: cycleSetting.monthlyIncome ?? fallbackSettings.monthlyIncome ?? 0,
+    initialBill: cycleSetting.initialBill ?? fallbackSettings.initialBill ?? 0,
+    savingsGoal: cycleSetting.savingsGoal ?? fallbackSettings.savingsGoal ?? 0,
+    initialBankBalance: cycleSetting.initialBankBalance ?? fallbackSettings.initialBankBalance ?? state.initialBankBalance ?? 0
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -76,7 +85,8 @@ export function useFinance() {
         [selectedCycleId]: {
           monthlyIncome: newIncome,
           initialBill: newInitialBill,
-          savingsGoal: newSavingsGoal
+          savingsGoal: newSavingsGoal,
+          initialBankBalance: newBankBalance
         }
       }
     }));
@@ -201,22 +211,22 @@ export function useFinance() {
   const isSavingsCorroded = currentSettings.savingsGoal > 0 && safeSavings < currentSettings.savingsGoal;
 
   // ----- CÁLCULOS DA CONTA BANCÁRIA -----
-  const bankExpensesSum = state.expenses
+  const bankExpensesSum = currentCycleExpenses
     .filter(e => e.source === 'bank')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const bankIncomesSum = state.extraIncome
+  const bankIncomesSum = currentCycleExtraIncome
     .filter(i => i.source === 'bank')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const currentBankBalance = state.initialBankBalance - bankExpensesSum + bankIncomesSum;
+  const currentBankBalance = currentSettings.initialBankBalance - bankExpensesSum + bankIncomesSum;
 
   return {
     monthlyIncome: currentSettings.monthlyIncome,
     initialBill: currentSettings.initialBill,
     savingsGoal: currentSettings.savingsGoal,
     closingDay: state.closingDay,
-    initialBankBalance: state.initialBankBalance,
+    initialBankBalance: currentSettings.initialBankBalance,
     budgetMode: state.budgetMode,
     currentBankBalance,
     availableOverall,
