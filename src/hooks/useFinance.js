@@ -29,6 +29,7 @@ export function useFinance() {
         closingDay: parsed.closingDay || null,
         initialBankBalance: parsed.initialBankBalance || 0,
         extraIncome: parsed.extraIncome || [],
+        pendingIncomes: parsed.pendingIncomes || [],
         cycleSettings: parsed.cycleSettings || {},
         budgetMode: parsed.budgetMode || 'equal'
       };
@@ -38,6 +39,7 @@ export function useFinance() {
       initialBankBalance: 0,
       expenses: [],
       extraIncome: [],
+      pendingIncomes: [],
       cycleSettings: {},
       budgetMode: 'equal'
     };
@@ -154,6 +156,53 @@ export function useFinance() {
     }));
   };
 
+  // ----- DINHEIRO PENDENTE (A RECEBER) -----
+
+  const addPendingIncome = (income) => {
+    setState((prevState) => ({
+      ...prevState,
+      pendingIncomes: [
+        ...prevState.pendingIncomes,
+        {
+          ...income,
+          id: crypto.randomUUID(),
+          date: new Date().toISOString()
+        }
+      ]
+    }));
+  };
+
+  const deletePendingIncome = (id) => {
+    setState((prevState) => ({
+      ...prevState,
+      pendingIncomes: prevState.pendingIncomes.filter((income) => income.id !== id)
+    }));
+  };
+
+  const receivePendingIncome = (id, targetWeek, targetSource = 'credit') => {
+    setState((prevState) => {
+      const pendingItem = prevState.pendingIncomes.find((item) => item.id === id);
+      if (!pendingItem) return prevState;
+
+      return {
+        ...prevState,
+        pendingIncomes: prevState.pendingIncomes.filter((item) => item.id !== id),
+        extraIncome: [
+          ...prevState.extraIncome,
+          {
+            description: pendingItem.description,
+            amount: pendingItem.amount,
+            weekNumber: targetWeek,
+            type: 'income',
+            source: targetSource,
+            id: crypto.randomUUID(),
+            date: new Date().toISOString()
+          }
+        ]
+      };
+    });
+  };
+
   // ----- MOTOR DO CICLO FINANCEIRO -----
 
   const cycleInfo = useMemo(() => {
@@ -236,11 +285,15 @@ export function useFinance() {
     totalExtraIncomeSum: totalExtraIncomeCredit,
     expenses: currentCycleExpenses,
     extraIncome: currentCycleExtraIncome,
+    pendingIncomes: state.pendingIncomes,
     updateMonthlyIncome,
     addExpense,
     deleteExpense,
     addExtraIncome,
     deleteExtraIncome,
+    addPendingIncome,
+    deletePendingIncome,
+    receivePendingIncome,
     weeklyData,
     cycleInfo,
     selectedCycleId,
