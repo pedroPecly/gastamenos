@@ -9,6 +9,7 @@ export default function PendingIncomesModal({ isOpen, onClose }) {
   const [isAdding, setIsAdding] = useState(false);
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState('');
   
   // State for receiving process
   const [receivingId, setReceivingId] = useState(null);
@@ -21,6 +22,7 @@ export default function PendingIncomesModal({ isOpen, onClose }) {
       setReceivingId(null);
       setDescription('');
       setAmount('');
+      setDate('');
       
       const currentWeek = weeklyData.find(w => w.status === 'current');
       setReceiveWeek(currentWeek ? currentWeek.weekNumber : (weeklyData[0]?.weekNumber || 1));
@@ -35,10 +37,12 @@ export default function PendingIncomesModal({ isOpen, onClose }) {
     if (description && Number(amount) > 0) {
       addPendingIncome({
         description,
-        amount: Number(amount)
+        amount: Number(amount),
+        date: date ? new Date(`${date}T12:00:00`).toISOString() : undefined // Evita fuso horário adiantando a data
       });
       setDescription('');
       setAmount('');
+      setDate('');
       setIsAdding(false);
     }
   };
@@ -96,6 +100,17 @@ export default function PendingIncomesModal({ isOpen, onClose }) {
                       required
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">
+                    Data da Dívida <span className="text-[10px] text-gray-400 normal-case font-normal">(Opcional)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-3 focus:ring-2 focus:ring-amber-500 outline-none text-sm text-gray-900 dark:text-white"
+                  />
                 </div>
                 <div className="flex gap-2 pt-2">
                   <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-sm">Cancelar</button>
@@ -193,11 +208,7 @@ export default function PendingIncomesModal({ isOpen, onClose }) {
                           <HandCoins size={14} /> Receber Agora
                         </button>
                         <button 
-                          onClick={() => {
-                            if (confirm('Excluir este registro pendente?')) {
-                              deletePendingIncome(item.id);
-                            }
-                          }}
+                          onClick={() => deletePendingIncome(item.id)}
                           className="p-2 bg-red-50 text-red-500 dark:bg-red-900/10 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors"
                           title="Excluir"
                         >

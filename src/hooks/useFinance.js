@@ -166,7 +166,7 @@ export function useFinance() {
         {
           ...income,
           id: crypto.randomUUID(),
-          date: new Date().toISOString()
+          date: income.date || new Date().toISOString()
         }
       ]
     }));
