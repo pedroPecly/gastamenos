@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, HandCoins, CheckCircle2, Trash2, Plus, CreditCard, Landmark } from 'lucide-react';
 import { useFinance } from '../contexts/FinanceContext';
+import CurrencyInput from './CurrencyInput';
 
 export default function PendingIncomesModal({ isOpen, onClose }) {
   const { pendingIncomes, addPendingIncome, deletePendingIncome, receivePendingIncome, weeklyData } = useFinance();
@@ -87,13 +88,11 @@ export default function PendingIncomesModal({ isOpen, onClose }) {
                   <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase">Valor</label>
                   <div className="relative">
                     <span className="absolute left-3 top-3 text-gray-400 dark:text-gray-500 font-semibold text-sm">R$</span>
-                    <input
-                      type="number"
-                      step="0.01"
+                    <CurrencyInput
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                      onChange={(val) => setAmount(val)}
                       className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-3 pl-10 focus:ring-2 focus:ring-amber-500 outline-none text-sm font-semibold text-gray-900 dark:text-white"
-                      placeholder="0.00"
+                      placeholder="0,00"
                       required
                     />
                   </div>
