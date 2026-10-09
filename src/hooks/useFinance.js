@@ -199,11 +199,11 @@ export function useFinance() {
     .filter(i => i.source !== 'bank')
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  // totalSpent: total de saídas do ciclo do cartão
-  const totalSpent = totalExpensesCredit + currentSettings.initialBill;
+  // totalSpent: total de saídas do ciclo do cartão (abatendo receitas extras recebidas no cartão)
+  const totalSpent = totalExpensesCredit + currentSettings.initialBill - totalExtraIncomeCredit;
 
-  // availableOverall: renda + receitas extras no cartão − gastos no cartão − meta de economia
-  const rawAvailable = currentSettings.monthlyIncome + totalExtraIncomeCredit - totalSpent;
+  // availableOverall: renda livre após abater a fatura já liquidada
+  const rawAvailable = currentSettings.monthlyIncome - totalSpent;
   const availableOverall = rawAvailable - currentSettings.savingsGoal;
 
   // Economia Blindada
