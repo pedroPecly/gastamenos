@@ -61,9 +61,16 @@ export default function PendingIncomesModal({ isOpen, onClose }) {
         
         {/* Header */}
         <div className="flex justify-between items-center p-6 sm:p-8 pb-5 shrink-0 border-b border-gray-100 dark:border-gray-800">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <HandCoins className="text-amber-500" /> Dinheiro a Receber
-          </h3>
+          <div className="flex flex-col">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <HandCoins className="text-amber-500" /> Dinheiro a Receber
+            </h3>
+            {pendingIncomes.length > 0 && (
+              <span className="text-sm font-semibold text-amber-500 mt-1">
+                Total acumulado: R$ {pendingIncomes.reduce((acc, curr) => acc + curr.amount, 0).toFixed(2)}
+              </span>
+            )}
+          </div>
           <button onClick={onClose} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400 active:scale-95 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
             <X size={20} />
           </button>

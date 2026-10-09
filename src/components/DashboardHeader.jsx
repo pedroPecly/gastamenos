@@ -36,12 +36,20 @@ export default function DashboardHeader({ onOpenSettings, onOpenPending, theme, 
               {formatCurrency(availableOverall)}
             </h1>
             
-            {(initialBankBalance > 0 || currentBankBalance !== 0) && (
-              <div className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-blue-700 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-900/30 w-fit px-2.5 py-1 rounded-lg border border-blue-100/50 dark:border-blue-800/30">
-                <Landmark size={14} />
-                Conta: {formatCurrency(currentBankBalance)}
-              </div>
-            )}
+            <div className="mt-3 flex flex-col sm:flex-row gap-2">
+              {(initialBankBalance > 0 || currentBankBalance !== 0) && (
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-blue-700 dark:text-blue-400 bg-blue-50/70 dark:bg-blue-900/30 w-fit px-2.5 py-1 rounded-lg border border-blue-100/50 dark:border-blue-800/30">
+                  <Landmark size={14} />
+                  Conta: {formatCurrency(currentBankBalance)}
+                </div>
+              )}
+              {pendingTotal > 0 && (
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-900/30 w-fit px-2.5 py-1 rounded-lg border border-amber-100/50 dark:border-amber-800/30">
+                  <HandCoins size={14} />
+                  Dívidas (A Receber): {formatCurrency(pendingTotal)}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="flex flex-col items-end gap-3">
