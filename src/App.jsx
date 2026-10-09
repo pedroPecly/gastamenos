@@ -6,6 +6,7 @@ import DashboardHeader from './components/DashboardHeader';
 import WeeklyCard from './components/WeeklyCard';
 import InitialSetupModal from './components/InitialSetupModal';
 import AddExpenseModal from './components/AddExpenseModal';
+import PendingIncomesModal from './components/PendingIncomesModal';
 
 function App() {
   const { monthlyIncome, weeklyData, addExpense, addExtraIncome } = useFinance();
@@ -13,6 +14,7 @@ function App() {
 
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(monthlyIncome === 0);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
   const [expandedWeek, setExpandedWeek] = useState(null);
   
   const toggleWeek = (weekNumber) => {
@@ -33,6 +35,7 @@ function App() {
         
         <DashboardHeader 
           onOpenSettings={() => setIsIncomeModalOpen(true)} 
+          onOpenPending={() => setIsPendingModalOpen(true)}
           theme={theme}
           toggleTheme={toggleTheme}
         />
@@ -70,6 +73,11 @@ function App() {
           onClose={() => setIsExpenseModalOpen(false)}
           onSave={handleTransactionSave}
           weeklyData={weeklyData.filter(w => w.status !== 'passed')}
+        />
+
+        <PendingIncomesModal
+          isOpen={isPendingModalOpen}
+          onClose={() => setIsPendingModalOpen(false)}
         />
       </div>
     </div>

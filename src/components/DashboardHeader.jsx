@@ -1,4 +1,4 @@
-import { Pencil, Calendar, AlertTriangle, PiggyBank, Landmark, Moon, Sun, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, Calendar, AlertTriangle, PiggyBank, Landmark, Moon, Sun, ChevronLeft, ChevronRight, HandCoins } from 'lucide-react';
 import { useFinance } from '../contexts/FinanceContext';
 
 const formatCurrency = (value) => {
@@ -8,7 +8,7 @@ const formatCurrency = (value) => {
   }).format(value);
 };
 
-export default function DashboardHeader({ onOpenSettings, theme, toggleTheme }) {
+export default function DashboardHeader({ onOpenSettings, onOpenPending, theme, toggleTheme }) {
   const {
     availableOverall,
     savingsGoal,
@@ -20,8 +20,11 @@ export default function DashboardHeader({ onOpenSettings, theme, toggleTheme }) 
     currentBankBalance,
     initialBankBalance,
     totalSpent,
-    changeCycle
+    changeCycle,
+    pendingIncomes
   } = useFinance();
+
+  const pendingTotal = pendingIncomes.reduce((acc, curr) => acc + curr.amount, 0);
 
   return (
     <>
@@ -43,6 +46,19 @@ export default function DashboardHeader({ onOpenSettings, theme, toggleTheme }) 
           
           <div className="flex flex-col items-end gap-3">
             <div className="flex items-center gap-2">
+              <button 
+                onClick={onOpenPending}
+                className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-full text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition active:scale-95 shadow-sm dark:shadow-none relative"
+                title="Dinheiro a Receber"
+              >
+                <HandCoins size={20} />
+                {pendingTotal > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500 border-2 border-white dark:border-gray-900"></span>
+                  </span>
+                )}
+              </button>
               <button 
                 onClick={toggleTheme}
                 className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition active:scale-95 shadow-sm dark:shadow-none"
