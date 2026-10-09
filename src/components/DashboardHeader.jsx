@@ -46,7 +46,7 @@ export default function DashboardHeader({ onOpenSettings, onOpenPending, theme, 
               {pendingTotal > 0 && (
                 <div className="flex items-center gap-1.5 text-sm font-semibold text-amber-700 dark:text-amber-400 bg-amber-50/70 dark:bg-amber-900/30 w-fit px-2.5 py-1 rounded-lg border border-amber-100/50 dark:border-amber-800/30">
                   <HandCoins size={14} />
-                  Dívidas (A Receber): {formatCurrency(pendingTotal)}
+                  Dívidas: {formatCurrency(pendingTotal)}
                 </div>
               )}
             </div>
